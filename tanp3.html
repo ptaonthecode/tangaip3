@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Một câu hỏi...</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Áp dụng font Inter làm font chữ mặc định */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Đảm bảo nút "Không" có hiệu ứng chuyển động mượt mà */
+        #noBtn {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-pink-100 flex items-center justify-center min-h-screen">
+
+    <main class="w-full max-w-md p-8 bg-white rounded-lg shadow-xl text-center">
+
+        <!-- 1. Vùng chứa câu hỏi (Ban đầu hiển thị) -->
+        <!-- Thẻ chứa này phải là 'relative' để nút 'absolute' bên trong hoạt động đúng -->
+        <div id="questionContainer" class="relative h-48">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">
+                Làm người yêu anh nhé? 💖
+            </h1>
+            
+            <div class="flex justify-center gap-4">
+                <!-- Nút "Có" (Thực ra là "Không" nhưng lại kích hoạt "Có") -->
+                <button id="yesBtn" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition-colors">
+                    không!
+                </button>
+                
+                <!-- Nút "Không" (Thực ra là "Có" nhưng lại chạy trốn) -->
+                <button id="noBtn" class="absolute px-6 py-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600" style="left: 60%; top: 60%;">
+                    dạ
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Vùng chứa Trình tải (Ban đầu bị ẩn) -->
+        <div id="heartLoader" class="hidden flex-col items-center justify-center">
+            <!-- Biểu tượng quay tròn -->
+            <div class="w-16 h-16 border-4 border-dashed border-pink-500 rounded-full animate-spin"></div>
+            <p class="text-gray-600 mt-4">Đang xử lý tình yêu...</p>
+        </div>
+
+        <!-- 3. Vùng chứa Kết quả (Ban đầu bị ẩn) -->
+    <div id="resultContainer" class="hidden text-center">
+        <!-- (SỬA) Thêm ID để dễ dàng thay đổi văn bản -->
+        <h2 id="resultTitle" class="text-3xl font-bold text-pink-600 mb-4">
+            Yayy! Chúng ta hợp nhau quá! 🎉
+        </h2>
+        <!-- (MỚI) Thêm một dòng để hiển thị điểm số -->
+        <p id="resultScore" class="text-lg text-gray-700 mb-4"></p>
+        <!-- 
+             Bạn có thể thay thế 'src' bên dưới bằng URL GIF thật
+                ví dụ: "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjEx.../giphy.gif" 
+            -->
+            <img id="gifResult" 
+                 src="https://placehold.co/300x300/fecaca/db2777?text=Yayy!%0A%3C3" 
+                 alt="Ăn mừng" 
+             class="w-full max-w-xs mx-auto rounded-lg shadow-lg">
+    </div>
+
+    <!-- 4. VÙNG CHỨA QUIZ (MỚI) -->
+    <div id="quizContainer" class="hidden flex-col items-center justify-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            Bắt đầu kiểm tra điểm tương đồng...
+        </h2>
+        <!-- Thêm chiều cao cố định để tiêu đề không nhảy khi đổi chữ -->
+        <p id="quizQuestion" class="text-lg text-gray-700 mb-6 h-16 flex items-center justify-center">
+            <!-- Câu hỏi sẽ được tải vào đây -->
+        </p>
+        <div class="flex justify-center gap-4">
+            <!-- Đặt chiều rộng cố định để nút không thay đổi kích thước -->
+            <button id="quizYesBtn" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors w-24">
+                Có
+            </button>
+            <button id="quizNoBtn" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition-colors w-24">
+                Không
+            </button>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    // Lấy các phần tử DOM
+        const questionContainer = document.getElementById('questionContainer');
+        const yesBtn = document.getElementById('yesBtn');
+        const noBtn = document.getElementById('noBtn');
+        const heartLoader = document.getElementById('heartLoader');
+    const resultContainer = document.getElementById('resultContainer');
+    
+    // --- PHẦN TỬ QUIZ MỚI ---
+    const quizContainer = document.getElementById('quizContainer');
+    const quizQuestion = document.getElementById('quizQuestion');
+    const quizYesBtn = document.getElementById('quizYesBtn');
+    const quizNoBtn = document.getElementById('quizNoBtn');
+
+    // --- CÂU HỎI QUIZ (ĐÃ CẬP NHẬT) ---
+    // (Tôi đã cập nhật các câu hỏi này để so sánh với sở thích của bạn)
+    // Cấu trúc mới: { question: "Câu hỏi?", correctAnswer: 'yes'/'no' }
+    const quizQuestions = [
+        // Các câu hỏi mới dựa trên sở thích của bạn
+        { question: "Bạn có thích nấu ăn ở nhà không?", correctAnswer: 'yes' },
+        { question: "Bạn có thích leo núi không?", correctAnswer: 'yes' },
+        { question: "Bạn có thích nuôi mèo không?", correctAnswer: 'yes' },
+        { question: "Bạn có thích trồng hoa/cây cảnh không?", correctAnswer: 'yes' },
+        { question: "Bạn có thích uống trà hơn cà phê không?", correctAnswer: 'yes' },
+        { question: "Bạn có hay ngắm/chụp ảnh bầu trời không?", correctAnswer: 'yes' },
+        { question: "Bạn có thích nuôi chó không?", correctAnswer: 'yes' },
+        // Các câu hỏi cũ (tôi sẽ giả định câu trả lời cho chúng)
+        { question: "Bạn có phải là người hay dậy sớm không?", correctAnswer: 'yes' }, // Người leo núi thường dậy sớm
+        { question: "Bạn thích biển không?", correctAnswer: 'no' }, // Vì bạn thích núi
+        // (MỚI) Câu hỏi cuối cùng
+        { question: "Ngoài anh ra em thích ai khác không?", correctAnswer: 'no' }
+    ];
+    let currentQuestionIndex = 0;
+    let score = 0; // Biến để tính điểm
+    let quizDone = false; // (MỚI) Cờ để theo dõi trạng thái quiz
+
+    // Lấy tiêu đề câu hỏi ban đầu
+    const originalQuestionTitle = questionContainer.querySelector('h1');
+    const gifResult = document.getElementById('gifResult');
+    
+    // --- HÀM TẢI CÂU HỎI ---
+    function loadQuestion(index) {
+        if (index < quizQuestions.length) {
+            // (SỬA) Lấy câu hỏi từ đối tượng
+            quizQuestion.textContent = quizQuestions[index].question;
+        } else {
+            // Quiz kết thúc
+            showQuizResult(); // (SỬA) Đổi tên hàm
+        }
+    }
+
+    // --- HÀM XỬ LÝ TRẢ LỜI QUIZ (SỬA) ---
+    function handleQuizAnswer(userAnswer) {
+        // Lấy câu trả lời đúng của câu hỏi hiện tại
+        const correct = quizQuestions[currentQuestionIndex].correctAnswer;
+
+        // So sánh và tăng điểm
+        if (userAnswer === correct) {
+            score++;
+        }
+        
+        // Chuyển sang câu hỏi tiếp theo
+        currentQuestionIndex++;
+        loadQuestion(currentQuestionIndex);
+    }
+
+    // --- HÀM HIỂN THỊ KẾT QUẢ QUIZ (SỬA TÊN) ---
+    function showQuizResult() {
+        quizContainer.style.display = "none";
+        quizDone = true; // (MỚI) Đặt cờ là quiz đã xong
+
+        // Lấy các phần tử kết quả
+        const resultTitle = document.getElementById('resultTitle');
+        const resultScore = document.getElementById('resultScore');
+        const totalQuestions = quizQuestions.length;
+        
+        // Tính toán thông điệp dựa trên điểm số
+        let titleMessage = "";
+        if (score >= totalQuestions * 0.8) { // > 80%
+            titleMessage = "Trời ơi! Chúng ta giống nhau quá! 🎉";
+        } else if (score >= totalQuestions * 0.5) { // > 50%
+            titleMessage = "Yayy! Chúng ta khá hợp nhau đó! 😊";
+        } else {
+            titleMessage = "Hmm, có vẻ chúng ta là hai cực trái dấu! 😅";
+        }
+
+        // Hiển thị kết quả
+        resultTitle.textContent = titleMessage;
+        resultScore.textContent = `Điểm tương đồng của chúng ta là: ${score} / ${totalQuestions}`;
+        
+        resultContainer.style.display = "block";
+
+        // (MỚI) Đặt hẹn giờ để quay lại câu hỏi chính
+        setTimeout(backToQuestion, 4000); // 4 giây
+    }
+
+    // (MỚI) HÀM QUAY LẠI CÂU HỎI CHÍNH
+    function backToQuestion() {
+        resultContainer.style.display = "none";
+
+        // Thay đổi câu hỏi
+        originalQuestionTitle.textContent = "Vậy... đồng ý thật nhé?";
+        
+        // Ẩn nút "không!"
+        yesBtn.style.display = 'none';
+        
+        // Thay đổi nút "dạ"
+        noBtn.textContent = 'Em đồng ý! ❤️';
+        noBtn.style.position = 'relative'; // Đưa nó trở lại luồng bình thường
+        noBtn.style.left = 'auto';
+        noBtn.style.top = 'auto';
+
+        // Hiển thị lại vùng câu hỏi
+        questionContainer.style.display = "block";
+    }
+
+    // (MỚI) HÀM XÁC NHẬN CUỐI CÙNG
+    function showFinalConfirmation() {
+        questionContainer.style.display = "none";
+        
+        // Cập nhật thông điệp chiến thắng
+        resultTitle.textContent = "Yayy! Anh yêu em! 🎉";
+        resultScore.textContent = "Chúng ta là một cặp trời sinh!";
+        // (MỚI) Thay đổi GIF
+        gifResult.src = 'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExajI0cnRleGNiNnBleDA4aWxncGk0b3U1M3BnejJoZnd2cWc2eHF5biZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26FL1zoxbUVIQW7cI/giphy.gif';
+
+        resultContainer.style.display = "block";
+    }
+
+    // Gắn sự kiện cho các nút quiz (SỬA)
+    // Giờ đây chúng ta truyền 'yes' hoặc 'no' vào hàm
+    quizYesBtn.addEventListener("click", () => handleQuizAnswer('yes'));
+    quizNoBtn.addEventListener("click", () => handleQuizAnswer('no'));
+
+
+    // Sự kiện khi nhấp vào nút "Có" (nút 'không!')
+    yesBtn.addEventListener("click", () => {
+            // Ẩn câu hỏi và hiển thị trình tải
+            questionContainer.style.display = "none";
+            // Sử dụng 'flex' vì chúng ta đã thiết kế nó với flexbox
+            heartLoader.style.display = "flex"; 
+
+        // Đặt thời gian chờ 3 giây (3000 mili giây)
+        const timeoutId = setTimeout(() => {
+            // Ẩn trình tải và hiển thị QUIZ (thay vì kết quả)
+            heartLoader.style.display = "none";
+            quizContainer.style.display = "flex"; // Hiển thị quiz
+            loadQuestion(currentQuestionIndex); // Tải câu hỏi đầu tiên
+        }, 3000);
+    });
+
+    // Sự kiện khi di chuột qua nút "Không" (nút 'dạ')
+        // --- TỐI ƯU HÓA: Chuyển logic ra hàm riêng ---
+        const moveNoButton = () => {
+            // (MỚI) Nếu quiz đã xong, không chạy nữa
+            if (quizDone) return;
+
+            // Lấy kích thước của vùng chứa
+            const containerWidth = questionContainer.offsetWidth;
+            const containerHeight = questionContainer.offsetHeight;
+            
+            // Lấy kích thước của chính nút "Không"
+            const btnWidth = noBtn.offsetWidth;
+            const btnHeight = noBtn.offsetHeight;
+
+            // Tính toán vị trí ngẫu nhiên mới
+            // Trừ đi kích thước của nút để nó không bao giờ chạy ra ngoài lề
+            const newX = Math.floor(Math.random() * (containerWidth - btnWidth));
+            const newY = Math.floor(Math.random() * (containerHeight - btnHeight));
+
+            // Áp dụng vị trí mới cho nút
+            noBtn.style.left = `${newX}px`;
+            noBtn.style.top = `${newY}px`;
+        };
+
+        // --- Gắn sự kiện cho cả máy tính và di động ---
+
+        // Dành cho máy tính (di chuột)
+        noBtn.addEventListener("mouseover", moveNoButton);
+
+        // Dành cho di động (chạm vào)
+        noBtn.addEventListener("touchstart", (e) => {
+            // Ngăn hành vi mặc định của trình duyệt (như cuộn trang khi chạm)
+            e.preventDefault();
+            moveNoButton();
+        });
+
+        // (MỚI) Gắn sự kiện click cho nút "dạ" (noBtn)
+        noBtn.addEventListener("click", () => {
+            // Chỉ hoạt động sau khi quiz đã xong
+            if (quizDone) {
+                showFinalConfirmation();
+            }
+        });
+    </script>
+
+</body>
+</html>
+
